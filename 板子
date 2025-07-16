@@ -1,0 +1,28 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define endl '\n'
+#define debug(x) cout<<#x<<":"<<x<<endl;
+#define debug2(x,y) cout<<#x<":"<<x<<" "<<#y<<":"<<y<<endl;
+#define sep cout<<endl<<endl;
+#define lowbit(x) x&(-x)
+#define x first
+#define y second 
+typedef long long LL;
+typedef unsigned long long ull;
+typedef vector<vector<LL> >  vvL;
+typedef vector<LL> vL;
+int dx[]{-1,1,0,0,-1,1,-1,1};
+int dy[]={0,0,-1,1,-1,-1,1,1};
+const int inf=0x3fffffff;
+ 
+void solve(){
+        
+}
+
+signed main(){
+    ios::sync_with_stdio(false),cin.tie(0);
+    int T=1;
+    //cin>>T;   
+    while(T--) solve();
+    return 0;
+}
