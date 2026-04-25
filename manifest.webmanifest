@@ -2,7 +2,7 @@
   "name": "私人日记记录",
   "short_name": "私人日记",
   "description": "本地优先的私人日记、情绪记录和附件记录工具。",
-  "author": "swys 大王",
+  "author": "南华 swys",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
