@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#1a1a1a" />
   <meta name="author" content="南华 swys" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="私人日记" />
+  <meta name="apple-mobile-web-app-title" content="随笔" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.png" />
   <link rel="apple-touch-icon" href="icon-512.png" />
-  <title>私人日记记录</title>
+  <title>随笔记录</title>
   <style>
     :root {
       --bg: #1a1a1a;
@@ -710,7 +710,7 @@
   </div>
   <div class="app">
     <aside>
-      <h1>私人日记</h1>
+      <h1>随笔</h1>
       <p class="sub">记录事实，也照看情绪。每天几分钟，给自己留下可回看的生活轨迹。</p>
       <div class="author-card" aria-label="个人签名">
         <img class="author-avatar" src="icon.png" alt="作者头像" />
@@ -1809,7 +1809,7 @@
       };
     }
     function makeMarkdown() {
-      const lines = ["# 私人日记", ""];
+      const lines = ["# 随笔", ""];
       [...state.entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e => {
         lines.push(`## ${e.date}｜${e.title || "无标题日记"}`, "");
         lines.push(`- 心情：${moodText[e.mood]}`);
@@ -1830,7 +1830,7 @@
     function makeMarkdownFor(entries, title) {
       const backup = state.entries;
       state.entries = entries;
-      const text = makeMarkdown().replace("# 私人日记", `# ${title}`);
+      const text = makeMarkdown().replace("# 随笔", `# ${title}`);
       state.entries = backup;
       return text;
     }
@@ -2101,11 +2101,11 @@
         alert("浏览器限制了自动复制，已帮你选中文本。");
       }
     });
-    $("downloadMarkdown").addEventListener("click", () => download("私人日记.md", makeMarkdown(), "text/markdown;charset=utf-8"));
+    $("downloadMarkdown").addEventListener("click", () => download("随笔.md", makeMarkdown(), "text/markdown;charset=utf-8"));
     $("downloadMonthMarkdown").addEventListener("click", () => {
       const prefix = todayString().slice(0, 7);
       const entries = state.entries.filter(e => e.date.startsWith(prefix));
-      download(`私人日记-${prefix}.md`, makeMarkdownFor(entries, `私人日记 ${prefix}`), "text/markdown;charset=utf-8");
+      download(`随笔-${prefix}.md`, makeMarkdownFor(entries, `随笔 ${prefix}`), "text/markdown;charset=utf-8");
     });
     $("downloadTagMarkdown").addEventListener("click", () => {
       const tag = prompt("输入要导出的标签，例如：学习");
@@ -2115,7 +2115,7 @@
         alert("没有找到这个标签的日记。");
         return;
       }
-      download(`私人日记-${tag}.md`, makeMarkdownFor(entries, `私人日记 标签：${tag}`), "text/markdown;charset=utf-8");
+      download(`随笔-${tag}.md`, makeMarkdownFor(entries, `随笔 标签：${tag}`), "text/markdown;charset=utf-8");
     });
     $("downloadJson").addEventListener("click", async () => {
       const backup = {
@@ -2123,7 +2123,7 @@
         media: await allMedia(),
         exportedAt: new Date().toISOString()
       };
-      download("私人日记备份.json", JSON.stringify(backup, null, 2), "application/json;charset=utf-8");
+      download("随笔备份.json", JSON.stringify(backup, null, 2), "application/json;charset=utf-8");
     });
     $("importJson").addEventListener("click", () => $("fileInput").click());
     $("fileInput").addEventListener("change", async (event) => {
