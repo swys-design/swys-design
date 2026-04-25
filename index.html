@@ -557,6 +557,18 @@
     .site-signature::after {
       background: linear-gradient(90deg, rgba(0, 162, 255, .38), transparent);
     }
+    .site-signature a {
+      color: rgba(34, 229, 138, .82);
+      text-decoration: none;
+    }
+    .site-signature a:hover {
+      color: var(--green);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .signature-separator {
+      color: rgba(245, 245, 245, .28);
+    }
 
     @media (max-width: 900px) {
       .app { display: block; }
@@ -928,7 +940,11 @@
           <input id="fileInput" type="file" accept="application/json" hidden />
         </div>
       </section>
-      <div class="site-signature">由 南华 swys 制作</div>
+      <div class="site-signature">
+        <span>由 南华 swys 制作</span>
+        <span class="signature-separator">|</span>
+        <span>意见请咨询 <a href="mailto:2066204549@qq.com">2066204549@qq.com</a></span>
+      </div>
     </main>
   </div>
 
