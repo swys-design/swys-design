@@ -2,6 +2,7 @@
   "name": "私人日记记录",
   "short_name": "私人日记",
   "description": "本地优先的私人日记、情绪记录和附件记录工具。",
+  "author": "swys 大王",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -9,10 +10,16 @@
   "theme_color": "#1a1a1a",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
