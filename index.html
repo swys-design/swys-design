@@ -1,0 +1,2107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1a1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="私人日记" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" />
+  <title>私人日记记录</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --panel: rgba(26, 26, 26, .68);
+      --ink: #f5f5f5;
+      --muted: rgba(245, 245, 245, .66);
+      --line: rgba(245, 245, 245, .13);
+      --green: #22e58a;
+      --blue: #00a2ff;
+      --gold: #ffd03f;
+      --red: #ff6b6b;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .46);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    #bg, #celebrationLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: #1a1a1a;
+    }
+    #celebrationLayer {
+      z-index: 4;
+      background: transparent;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button {
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      border: 1px solid rgba(245, 245, 245, .14);
+      background: rgba(245, 245, 245, .08);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    button:hover {
+      border-color: rgba(255, 208, 63, .55);
+      background: rgba(255, 208, 63, .12);
+      box-shadow: 0 0 20px rgba(255, 208, 63, .12);
+    }
+    button.primary {
+      background: var(--green);
+      border-color: var(--green);
+      color: #1a1a1a;
+      font-weight: 800;
+      box-shadow: 0 0 24px rgba(34, 229, 138, .18);
+    }
+    button.ghost { background: transparent; }
+    button.danger { color: var(--red); }
+    button.starred {
+      color: #1a1a1a;
+      background: var(--gold);
+      border-color: var(--gold);
+      font-weight: 800;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+    }
+    aside {
+      padding: 24px 18px;
+      border-right: 1px solid rgba(245, 245, 245, .1);
+      background: rgba(26, 26, 26, .62);
+      backdrop-filter: blur(22px) saturate(1.15);
+      box-shadow: 16px 0 58px rgba(0, 0, 0, .28);
+    }
+    main {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 26px;
+    }
+    h1 { margin: 0 0 6px; font-size: 26px; }
+    h2 { margin: 0 0 14px; font-size: 18px; }
+    .sub {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(245, 245, 245, .12);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px) saturate(1.12);
+    }
+    .side-card { padding: 16px; margin-bottom: 14px; }
+    .metric {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 9px 0;
+      border-top: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .metric strong { color: var(--ink); }
+
+    .ring {
+      width: 150px;
+      height: 150px;
+      margin: 6px auto 14px;
+      border-radius: 50%;
+      background: conic-gradient(var(--green) calc(var(--p) * 1%), rgba(245, 245, 245, .12) 0);
+      display: grid;
+      place-items: center;
+    }
+    .ring::after {
+      content: attr(data-text);
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: rgba(26, 26, 26, .82);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 28px;
+    }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tabs button.active {
+      background: var(--green);
+      color: #1a1a1a;
+      border-color: var(--green);
+      font-weight: 800;
+      box-shadow: 0 0 22px rgba(34, 229, 138, .16);
+    }
+    .view { display: none; }
+    .view.active { display: block; }
+    .grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: 18px; align-items: start; }
+    .section { padding: 18px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .full { grid-column: 1 / -1; }
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(245, 245, 245, .12);
+      border-radius: 7px;
+      background: linear-gradient(180deg, rgba(245,245,245,.08), rgba(245,245,245,.025)), rgba(0,0,0,.18);
+      color: var(--ink);
+      padding: 9px 10px;
+      outline: none;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.18), inset 0 -1px 0 rgba(255,255,255,.045);
+      backdrop-filter: blur(14px);
+    }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.65; }
+    input::placeholder, textarea::placeholder { color: rgba(245, 245, 245, .42); }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,162,255,.16), 0 0 24px rgba(0,162,255,.12);
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
+    .day {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      border: 1px solid rgba(245,245,245,.12);
+      background: rgba(245,245,245,.07);
+      color: var(--muted);
+      font-size: 13px;
+      position: relative;
+    }
+    .day.done {
+      background: var(--green);
+      border-color: var(--green);
+      color: #1a1a1a;
+      font-weight: 800;
+      box-shadow: 0 0 18px rgba(34,229,138,.22);
+    }
+    .day.today { outline: 3px solid rgba(0,162,255,.24); }
+
+    .entry { padding: 14px; border-top: 1px solid var(--line); }
+    .entry:first-child { border-top: 0; }
+    .entry-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+    .entry-title { font-weight: 800; line-height: 1.4; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(245,245,245,.12);
+      background: rgba(245,245,245,.07);
+      color: var(--muted);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .tag.green { color: var(--green); border-color: rgba(34,229,138,.36); }
+    .tag.blue { color: var(--blue); border-color: rgba(0,162,255,.36); }
+    .tag.gold { color: var(--gold); border-color: rgba(255,208,63,.36); }
+    .tag.red { color: var(--red); border-color: rgba(255,107,107,.36); }
+    .entry p { margin: 10px 0 0; color: rgba(245,245,245,.78); line-height: 1.7; white-space: pre-wrap; }
+    .empty { padding: 28px; color: var(--muted); text-align: center; }
+    .tip {
+      border-left: 4px solid var(--gold);
+      background: rgba(255,208,63,.12);
+      padding: 10px 12px;
+      color: rgba(245,245,245,.86);
+      line-height: 1.65;
+    }
+    .tip-list { display: grid; gap: 10px; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .toolbar input { min-width: 240px; flex: 1; }
+    .badge-wall {
+      display: grid;
+      gap: 8px;
+    }
+    .badge {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(245,245,245,.12);
+      background: rgba(245,245,245,.06);
+      color: var(--muted);
+    }
+    .badge.unlocked {
+      border-color: rgba(34,229,138,.36);
+      background: rgba(34,229,138,.1);
+      color: var(--ink);
+      box-shadow: 0 0 22px rgba(34,229,138,.08);
+    }
+    .badge-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      background: rgba(245,245,245,.08);
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .badge.unlocked .badge-mark {
+      background: var(--green);
+      color: #1a1a1a;
+    }
+    .mini-trend {
+      display: block;
+      width: 100%;
+      height: 160px;
+      border: 1px solid rgba(245,245,245,.12);
+      border-radius: 8px;
+      background: rgba(0,0,0,.18);
+      margin-top: 12px;
+    }
+    .save-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 6;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(34,229,138,.4);
+      background: rgba(26,26,26,.86);
+      color: var(--ink);
+      box-shadow: 0 18px 50px rgba(0,0,0,.36), 0 0 28px rgba(34,229,138,.12);
+      backdrop-filter: blur(16px);
+      transition: opacity .22s ease, transform .22s ease;
+      pointer-events: none;
+    }
+    .save-toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .template-strip {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+    }
+    .check-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .check-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid rgba(245,245,245,.12);
+      border-radius: 7px;
+      background: rgba(245,245,245,.07);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .check-pill input {
+      width: auto;
+      box-shadow: none;
+      accent-color: var(--green);
+    }
+    .attachment-zone {
+      display: grid;
+      gap: 10px;
+      min-height: 120px;
+      padding: 14px;
+      border: 1px dashed rgba(0,162,255,.34);
+      border-radius: 8px;
+      background: rgba(0,162,255,.06);
+      color: var(--muted);
+    }
+    .attachment-zone.dragging {
+      border-color: var(--green);
+      background: rgba(34,229,138,.1);
+      box-shadow: 0 0 28px rgba(34,229,138,.12);
+    }
+    .attachment-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .attachment-card {
+      position: relative;
+      min-height: 92px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(245,245,245,.12);
+      background: rgba(0,0,0,.18);
+      overflow: hidden;
+      cursor: zoom-in;
+      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+    .attachment-card:hover {
+      border-color: rgba(34,229,138,.42);
+      transform: translateY(-1px);
+      box-shadow: 0 0 24px rgba(34,229,138,.1);
+    }
+    .attachment-card img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-bottom: 7px;
+    }
+    .attachment-card audio {
+      width: 100%;
+      margin: 8px 0;
+    }
+    .attachment-name {
+      color: rgba(245,245,245,.84);
+      font-size: 12px;
+      line-height: 1.35;
+      word-break: break-all;
+    }
+    .attachment-meta {
+      color: rgba(245,245,245,.48);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+    .attachment-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      min-height: 28px;
+      padding: 2px 7px;
+      background: rgba(0,0,0,.55);
+      border-color: rgba(245,245,245,.18);
+    }
+    .attachment-download {
+      display: inline-flex;
+      margin-top: 8px;
+      min-height: 28px;
+      padding: 4px 8px;
+      align-items: center;
+      border-radius: 6px;
+      border: 1px solid rgba(0,162,255,.34);
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .viewer {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(0,0,0,.78);
+      backdrop-filter: blur(18px);
+    }
+    .viewer.active { display: grid; }
+    .viewer-card {
+      width: min(1100px, 100%);
+      max-height: min(86vh, 900px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      border-radius: 10px;
+      border: 1px solid rgba(245,245,245,.14);
+      background: rgba(18,18,18,.9);
+      box-shadow: 0 28px 90px rgba(0,0,0,.62);
+      overflow: hidden;
+    }
+    .viewer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(245,245,245,.1);
+    }
+    .viewer-title {
+      min-width: 0;
+      color: var(--ink);
+      font-weight: 800;
+      word-break: break-all;
+    }
+    .viewer-body {
+      min-height: 220px;
+      max-height: calc(86vh - 62px);
+      overflow: auto;
+      padding: 16px;
+      display: grid;
+      place-items: center;
+    }
+    .viewer-body img {
+      max-width: 100%;
+      max-height: calc(86vh - 110px);
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.38);
+    }
+    .viewer-body audio, .viewer-body video {
+      width: min(900px, 100%);
+      max-height: calc(86vh - 110px);
+      border-radius: 8px;
+    }
+    .viewer-file {
+      width: min(520px, 100%);
+      padding: 22px;
+      border: 1px solid rgba(245,245,245,.12);
+      border-radius: 10px;
+      background: rgba(245,245,245,.06);
+      text-align: center;
+    }
+    .trend {
+      display: block;
+      width: 100%;
+      height: 240px;
+      border: 1px solid rgba(245,245,245,.12);
+      border-radius: 8px;
+      background: rgba(0,0,0,.18);
+      margin-bottom: 14px;
+    }
+    .lock-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(0,0,0,.68);
+      backdrop-filter: blur(18px);
+    }
+    .lock-screen.active { display: grid; }
+    .lock-card {
+      width: min(420px, 100%);
+      padding: 22px;
+    }
+    .lock-card h2 { font-size: 22px; }
+    .lock-card .actions { justify-content: flex-end; }
+
+    @media (max-width: 900px) {
+      .app { display: block; }
+      aside {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 18px 16px;
+      }
+      main {
+        padding: 14px;
+      }
+      .tabs {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        padding: 10px 0;
+        background: linear-gradient(180deg, rgba(26,26,26,.96), rgba(26,26,26,.72));
+        backdrop-filter: blur(14px);
+      }
+      .grid { grid-template-columns: 1fr; }
+      .ring {
+        width: 122px;
+        height: 122px;
+      }
+      .ring::after {
+        width: 90px;
+        height: 90px;
+        font-size: 24px;
+      }
+      .badge-wall {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .viewer {
+        padding: 14px;
+      }
+      .viewer-card {
+        max-height: 92vh;
+      }
+      .viewer-body {
+        max-height: calc(92vh - 62px);
+      }
+    }
+    @media (max-width: 560px) {
+      body { font-size: 15px; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 17px; }
+      aside {
+        padding: 16px 14px;
+      }
+      main {
+        padding: 12px;
+      }
+      .side-card {
+        padding: 14px;
+      }
+      .section {
+        padding: 14px;
+      }
+      .tabs {
+        gap: 6px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tabs button {
+        min-width: max-content;
+        min-height: 42px;
+      }
+      .form-grid { grid-template-columns: 1fr; }
+      .entry-head { display: block; }
+      .check-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .calendar {
+        gap: 5px;
+      }
+      .day {
+        font-size: 12px;
+      }
+      .attachment-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .attachment-card img {
+        height: 96px;
+      }
+      .actions button {
+        flex: 1 1 auto;
+      }
+      .toolbar input {
+        min-width: 100%;
+      }
+      .badge-wall {
+        grid-template-columns: 1fr;
+      }
+      .trend {
+        height: 210px;
+      }
+      .mini-trend {
+        height: 140px;
+      }
+      .viewer {
+        padding: 8px;
+      }
+      .viewer-head {
+        align-items: start;
+        flex-direction: column;
+      }
+      .viewer-head .actions {
+        width: 100%;
+      }
+      .viewer-head .actions > * {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <canvas id="celebrationLayer"></canvas>
+  <div id="saveToast" class="save-toast">今天被认真记录了。</div>
+  <div id="attachmentViewer" class="viewer">
+    <div class="viewer-card">
+      <div class="viewer-head">
+        <div>
+          <div class="viewer-title" id="viewerTitle">附件</div>
+          <div class="attachment-meta" id="viewerMeta"></div>
+        </div>
+        <div class="actions" style="margin-top:0">
+          <a id="viewerDownload" class="attachment-download" href="#" download>下载</a>
+          <button id="closeViewer" type="button">关闭</button>
+        </div>
+      </div>
+      <div class="viewer-body" id="viewerBody"></div>
+    </div>
+  </div>
+  <div id="lockScreen" class="lock-screen">
+    <div class="panel lock-card">
+      <h2>日记已锁定</h2>
+      <p class="sub">输入你的本地隐私锁密码。这个锁用于防止随手打开，不等同于高强度加密。</p>
+      <label for="unlockPassword">密码</label>
+      <input id="unlockPassword" type="password" autocomplete="current-password" placeholder="输入密码" />
+      <p class="sub" id="lockMessage" style="margin-top:10px"></p>
+      <div class="actions">
+        <button id="unlockButton" class="primary">解锁</button>
+      </div>
+    </div>
+  </div>
+  <div class="app">
+    <aside>
+      <h1>私人日记</h1>
+      <p class="sub">记录事实，也照看情绪。每天几分钟，给自己留下可回看的生活轨迹。</p>
+      <div class="panel side-card">
+        <div class="ring" id="monthRing" style="--p:0" data-text="0%"></div>
+        <div class="metric"><span>本月记录</span><strong id="monthCount">0 天</strong></div>
+        <div class="metric"><span>当前连续</span><strong id="streak">0 天</strong></div>
+        <div class="metric"><span>全部日记</span><strong id="totalCount">0 篇</strong></div>
+        <div class="metric"><span>平均心情</span><strong id="avgMood">暂无</strong></div>
+      </div>
+      <div class="panel side-card">
+        <h2>今日问题</h2>
+        <p class="sub" id="dailyPrompt">今天有什么事值得被记住？</p>
+      </div>
+      <div class="panel side-card">
+        <h2>今日一句</h2>
+        <p class="sub" id="dailyQuote">正在生成今日句子。</p>
+        <div class="actions" style="margin-top:0">
+          <button type="button" id="changeQuote">换一句</button>
+        </div>
+      </div>
+      <div class="panel side-card">
+        <h2>成就徽章</h2>
+        <div class="badge-wall" id="badgeWall"></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="tabs">
+        <button class="active" data-tab="write">写日记</button>
+        <button data-tab="history">记录</button>
+        <button data-tab="insight">洞察</button>
+        <button data-tab="export">导出</button>
+      </div>
+
+      <section id="write" class="view active">
+        <div class="grid">
+          <div class="panel section">
+            <h2 id="formTitle">今天的日记</h2>
+            <div class="template-strip">
+              <select id="templateSelect">
+                <option value="daily">普通日记</option>
+                <option value="emotion">情绪复盘</option>
+                <option value="study">学习复盘</option>
+                <option value="low">低落急救</option>
+                <option value="night">睡前总结</option>
+              </select>
+              <button type="button" id="applyTemplate">套用模板</button>
+              <button type="button" id="toggleStar">标为重要</button>
+            </div>
+            <form id="diaryForm">
+              <div class="form-grid">
+                <div>
+                  <label for="date">日期</label>
+                  <input id="date" type="date" required />
+                </div>
+                <div>
+                  <label for="title">标题</label>
+                  <input id="title" placeholder="例如：把事情慢慢理顺的一天" />
+                </div>
+                <div>
+                  <label for="mood">心情</label>
+                  <select id="mood">
+                    <option value="5">很好</option>
+                    <option value="4">不错</option>
+                    <option value="3" selected>平稳</option>
+                    <option value="2">低落</option>
+                    <option value="1">很糟</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="energy">精力</label>
+                  <select id="energy">
+                    <option value="5">很充足</option>
+                    <option value="4">还可以</option>
+                    <option value="3" selected>一般</option>
+                    <option value="2">偏累</option>
+                    <option value="1">耗尽</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="sleep">睡眠</label>
+                  <input id="sleep" placeholder="例如：7.5 小时 / 熬夜 / 午睡 30 分钟" />
+                </div>
+                <div>
+                  <label for="tags">标签</label>
+                  <input id="tags" placeholder="学习、运动、关系、情绪、工作" />
+                </div>
+                <div class="full">
+                  <label>今天做过的事</label>
+                  <div class="check-row" id="habitChecks">
+                    <label class="check-pill"><input type="checkbox" value="运动" />运动</label>
+                    <label class="check-pill"><input type="checkbox" value="阅读" />阅读</label>
+                    <label class="check-pill"><input type="checkbox" value="刷题" />刷题</label>
+                    <label class="check-pill"><input type="checkbox" value="早睡" />早睡</label>
+                    <label class="check-pill"><input type="checkbox" value="散步" />散步</label>
+                  </div>
+                </div>
+                <div class="full">
+                  <label for="content">今天发生了什么</label>
+                  <textarea id="content" placeholder="写事实、感受、想法。不用漂亮，真实就行。"></textarea>
+                </div>
+                <div class="full">
+                  <label for="control">可控的一小步</label>
+                  <input id="control" placeholder="如果今天有压力，写一件你能控制的小事。" />
+                </div>
+                <div class="full">
+                  <label>附件记录</label>
+                  <div class="attachment-zone" id="attachmentZone">
+                    <div>
+                      <strong>图片、音频、文件都可以放这里</strong>
+                      <div class="sub" style="margin:6px 0 0">支持选择文件、拖拽文件、在页面里 Ctrl+V 粘贴剪贴板内容。单个附件建议不超过 8MB。</div>
+                    </div>
+                    <div class="actions" style="margin-top:0">
+                      <button type="button" id="pickFiles">选择附件</button>
+                      <button type="button" id="pasteClipboard">读取剪贴板</button>
+                    </div>
+                    <div class="attachment-list" id="attachmentList"></div>
+                    <input id="filePicker" type="file" multiple hidden />
+                  </div>
+                </div>
+                <div>
+                  <label for="gratitude">今天感谢</label>
+                  <textarea id="gratitude" placeholder="哪怕是一件很小的事。"></textarea>
+                </div>
+                <div>
+                  <label for="win">今天做得好的地方</label>
+                  <textarea id="win" placeholder="给自己一个具体的正反馈。"></textarea>
+                </div>
+                <div class="full">
+                  <label for="tomorrow">明天想照顾的一件事</label>
+                  <input id="tomorrow" placeholder="例如：先睡够；先完成最重要的一件小事。" />
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" id="fillPrompt">换一个提示</button>
+                <button type="submit" class="primary" id="saveButton">保存日记</button>
+                <button type="button" class="ghost" id="cancelEdit" hidden>取消编辑</button>
+                <button type="button" class="ghost" id="clearForm">清空表单</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel section">
+            <h2>本月日历</h2>
+            <div class="calendar" id="calendar"></div>
+            <h2 style="margin-top:18px">本周轨迹</h2>
+            <canvas id="weekTrack" class="mini-trend"></canvas>
+            <div class="tip-list" style="margin-top:16px" id="quickTips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="history" class="view">
+        <div class="panel section">
+          <h2>日记记录</h2>
+          <div class="toolbar">
+            <input id="search" placeholder="搜索标题、内容、标签" />
+            <select id="filterMood">
+              <option value="">全部心情</option>
+              <option value="5">很好</option>
+              <option value="4">不错</option>
+              <option value="3">平稳</option>
+              <option value="2">低落</option>
+              <option value="1">很糟</option>
+            </select>
+            <select id="filterStar">
+              <option value="">全部日记</option>
+              <option value="star">只看重要</option>
+            </select>
+            <button id="randomEntry">随机回看</button>
+          </div>
+          <div id="entries"></div>
+        </div>
+      </section>
+
+      <section id="insight" class="view">
+        <div class="grid">
+          <div class="panel section">
+            <h2>状态概览</h2>
+            <canvas id="trendChart" class="trend"></canvas>
+            <div id="stats"></div>
+          </div>
+          <div class="panel section">
+            <h2>给自己的建议</h2>
+            <div class="tip-list" id="coachTips"></div>
+            <h2 style="margin-top:18px">月度总结</h2>
+            <div class="tip-list" id="monthSummary"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="export" class="view">
+        <div class="panel section">
+          <h2>导出与备份</h2>
+          <p class="sub">数据保存在当前浏览器本地。建议定期导出 JSON 备份。</p>
+          <div class="actions">
+            <button id="copyMarkdown">复制 Markdown</button>
+            <button id="downloadMarkdown">下载 Markdown</button>
+            <button id="downloadMonthMarkdown">下载本月 Markdown</button>
+            <button id="downloadTagMarkdown">按标签导出</button>
+            <button id="downloadJson">下载 JSON 备份</button>
+            <button id="importJson">导入 JSON 备份</button>
+            <button id="setLock">设置隐私锁</button>
+            <button id="lockNow">立即锁定</button>
+            <button id="disableLock" class="ghost danger">关闭隐私锁</button>
+            <button id="wipeData" class="ghost danger">清空本地数据</button>
+          </div>
+          <textarea id="exportText" style="margin-top:14px; min-height:360px" readonly></textarea>
+          <input id="fileInput" type="file" accept="application/json" hidden />
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "private-diary-v1";
+    const LOCK_KEY = "private-diary-lock-v1";
+    const DRAFT_KEY = "private-diary-draft-v1";
+    const DB_NAME = "private-diary-media-db";
+    const DB_VERSION = 1;
+    const MEDIA_STORE = "media";
+    const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const $ = (id) => document.getElementById(id);
+    const prompts = [
+      "今天有什么事值得被记住？",
+      "今天哪一刻让你感觉自己还在向前？",
+      "今天最消耗你的是什么？你需要什么？",
+      "如果给今天一句标题，会是什么？",
+      "今天有没有一个很小但真实的好消息？",
+      "明天的你会感谢今天的你做哪件事？"
+    ];
+    const quotes = [
+      "慢慢来，也是在往前。",
+      "把今天过清楚，比把人生想明白更重要。",
+      "真正的改变，常常从一次如实记录开始。",
+      "不必赢过昨天，只要看见今天。",
+      "能照顾自己的人，已经很勇敢。",
+      "情绪不是敌人，它只是来报信。",
+      "微小的秩序，也能抵抗混乱。",
+      "你写下的不是琐事，是生活的证据。",
+      "把心放回当下，路会近一点。",
+      "允许波动，才有长期。",
+      "今天的一点诚实，会成为明天的力量。",
+      "人不是靠顿悟改变，而是靠一次次回来。",
+      "安静记录，也是一种修复。",
+      "先保住节奏，再追求漂亮。",
+      "生活会散，记录会把它轻轻收住。",
+      "你不需要一直强，只需要不丢下自己。",
+      "看见问题，是走出来的第一步。",
+      "不要急着评判今天，先把它安放好。",
+      "微小但稳定，胜过热烈但短暂。",
+      "给自己留一点耐心，像给明天留一盏灯。"
+    ];
+    const templates = {
+      daily: {
+        title: "普通日记",
+        content: "今天发生了什么？\n\n我当时的感受是：\n\n这件事说明了什么：",
+        gratitude: "今天感谢：",
+        win: "今天做得好的地方：",
+        tomorrow: "明天想照顾的一件事："
+      },
+      emotion: {
+        title: "情绪复盘",
+        content: "触发情绪的事件：\n\n我感受到的情绪：\n\n我真正需要的是：\n\n下次我可以怎么照顾自己：",
+        gratitude: "今天仍然值得感谢的是：",
+        win: "我没有忽视自己的感受，这本身就很好。",
+        tomorrow: "明天先照顾自己的一个小需求。"
+      },
+      study: {
+        title: "学习复盘",
+        content: "今天学了什么：\n\n卡点是什么：\n\n真正学到的经验：\n\n下次怎么改进：",
+        gratitude: "感谢今天愿意推进一点的自己。",
+        win: "今天完成了：",
+        tomorrow: "明天先完成一个最小学习任务。"
+      },
+      low: {
+        title: "低落急救",
+        content: "现在最难受的是：\n\n我可以暂时不解决全部问题，但可以先做：\n\n如果朋友这样，我会对他说：",
+        gratitude: "今天还能抓住的一件小事：",
+        win: "我撑到了现在。",
+        tomorrow: "明天只做一件很小、很确定的事。"
+      },
+      night: {
+        title: "睡前总结",
+        content: "今天可以放下的事：\n\n今天可以保留的事：\n\n现在最适合停止想的是：",
+        gratitude: "今天感谢：",
+        win: "今天做得好的地方：",
+        tomorrow: "明天醒来先做："
+      }
+    };
+    const moodText = { 1: "很糟", 2: "低落", 3: "平稳", 4: "不错", 5: "很好" };
+    const state = load();
+    let editingId = null;
+    let starredDraft = false;
+    let currentAttachments = [];
+    let pendingDeletedAttachmentIds = [];
+    let dbPromise = null;
+
+    function todayString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+    function formatDate(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const data = raw ? JSON.parse(raw) : { entries: [] };
+        if (!Array.isArray(data.entries)) data.entries = [];
+        data.entries = data.entries.map(e => ({
+          habits: [],
+          control: "",
+          starred: false,
+          attachments: [],
+          ...e
+        }));
+        return data;
+      } catch {
+        return { entries: [] };
+      }
+    }
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    }
+    function escapeHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, ch => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+      }[ch]));
+    }
+    function formatBytes(size) {
+      if (!size) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      let value = size;
+      let idx = 0;
+      while (value >= 1024 && idx < units.length - 1) {
+        value /= 1024;
+        idx++;
+      }
+      return `${value.toFixed(value >= 10 || idx === 0 ? 0 : 1)} ${units[idx]}`;
+    }
+    function mediaKind(type) {
+      if (String(type).startsWith("image/")) return "image";
+      if (String(type).startsWith("audio/")) return "audio";
+      if (String(type).startsWith("video/")) return "video";
+      return "file";
+    }
+    function openMediaDb() {
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(MEDIA_STORE)) db.createObjectStore(MEDIA_STORE, { keyPath: "id" });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return dbPromise;
+    }
+    async function putMedia(record) {
+      const db = await openMediaDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE, "readwrite");
+        tx.objectStore(MEDIA_STORE).put(record);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    async function getMedia(id) {
+      const db = await openMediaDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE, "readonly");
+        const req = tx.objectStore(MEDIA_STORE).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function deleteMedia(id) {
+      const db = await openMediaDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE, "readwrite");
+        tx.objectStore(MEDIA_STORE).delete(id);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    async function allMedia() {
+      const db = await openMediaDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE, "readonly");
+        const req = tx.objectStore(MEDIA_STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function clearMedia() {
+      const db = await openMediaDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE, "readwrite");
+        tx.objectStore(MEDIA_STORE).clear();
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    function uniqueDates() {
+      return [...new Set(state.entries.map(e => e.date))].sort();
+    }
+    function currentStreak() {
+      const dates = new Set(uniqueDates());
+      let d = new Date(todayString() + "T00:00:00");
+      let count = 0;
+      while (dates.has(formatDate(d))) {
+        count++;
+        d = new Date(d.getTime() - DAY_MS);
+      }
+      return count;
+    }
+    function monthEntries() {
+      const prefix = todayString().slice(0, 7);
+      return state.entries.filter(e => e.date.startsWith(prefix));
+    }
+    function avg(nums) {
+      return nums.length ? nums.reduce((a,b)=>a+b,0) / nums.length : 0;
+    }
+    function switchTab(tab) {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      document.querySelector(`.tabs button[data-tab="${tab}"]`).classList.add("active");
+      $(tab).classList.add("active");
+    }
+    function randomPrompt() {
+      $("dailyPrompt").textContent = prompts[Math.floor(Math.random() * prompts.length)];
+    }
+    function dateSeed(date) {
+      return [...date].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    }
+    function renderDailyQuote(offset = 0) {
+      const idx = (dateSeed(todayString()) + offset) % quotes.length;
+      $("dailyQuote").textContent = quotes[idx];
+    }
+
+    function simpleHash(text) {
+      let h1 = 0xdeadbeef;
+      let h2 = 0x41c6ce57;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return `${(h2 >>> 0).toString(16)}${(h1 >>> 0).toString(16)}`;
+    }
+
+    function showLock(message = "") {
+      $("lockMessage").textContent = message;
+      $("lockScreen").classList.add("active");
+      setTimeout(() => $("unlockPassword").focus(), 50);
+    }
+
+    function hideLock() {
+      $("unlockPassword").value = "";
+      $("lockMessage").textContent = "";
+      $("lockScreen").classList.remove("active");
+    }
+
+    function unlockDiary() {
+      const saved = localStorage.getItem(LOCK_KEY);
+      if (!saved) {
+        hideLock();
+        return;
+      }
+      if (simpleHash($("unlockPassword").value) === saved) {
+        hideLock();
+        loadDraft();
+      } else {
+        showLock("密码不对。");
+      }
+    }
+
+    function setupLock() {
+      const pass = prompt("设置一个本地隐私锁密码。请记住它，忘记后无法在程序内找回。");
+      if (!pass) return;
+      if (pass.length < 4) {
+        alert("密码至少 4 位。");
+        return;
+      }
+      localStorage.setItem(LOCK_KEY, simpleHash(pass));
+      alert("隐私锁已开启。");
+    }
+
+    function disableLock() {
+      const saved = localStorage.getItem(LOCK_KEY);
+      if (!saved) {
+        alert("当前没有开启隐私锁。");
+        return;
+      }
+      const pass = prompt("输入当前密码以关闭隐私锁。");
+      if (!pass) return;
+      if (simpleHash(pass) !== saved) {
+        alert("密码不对。");
+        return;
+      }
+      localStorage.removeItem(LOCK_KEY);
+      alert("隐私锁已关闭。");
+    }
+
+    function selectedHabits() {
+      return [...document.querySelectorAll("#habitChecks input:checked")].map(input => input.value);
+    }
+
+    function setHabits(values) {
+      const set = new Set(values || []);
+      document.querySelectorAll("#habitChecks input").forEach(input => {
+        input.checked = set.has(input.value);
+      });
+    }
+    function attachmentMeta(record) {
+      return {
+        id: record.id,
+        name: record.name,
+        type: record.type,
+        size: record.size,
+        kind: record.kind,
+        createdAt: record.createdAt
+      };
+    }
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+    async function addFiles(files) {
+      const accepted = [...files].filter(Boolean);
+      if (!accepted.length) return;
+      for (const file of accepted) {
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+          alert(`“${file.name || "剪贴板附件"}”超过 8MB，暂时没有加入。`);
+          continue;
+        }
+        const id = window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+        const record = {
+          id,
+          name: file.name || `剪贴板附件-${new Date().toLocaleTimeString()}`,
+          type: file.type || "application/octet-stream",
+          kind: mediaKind(file.type),
+          size: file.size || 0,
+          data: await fileToDataUrl(file),
+          createdAt: new Date().toISOString()
+        };
+        await putMedia(record);
+        currentAttachments.push(attachmentMeta(record));
+      }
+      renderAttachmentList();
+      saveDraft();
+    }
+    async function pasteClipboardFiles() {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        alert("当前浏览器不支持按钮读取剪贴板。你可以点附件区后使用 Ctrl+V。");
+        return;
+      }
+      try {
+        const items = await navigator.clipboard.read();
+        const files = [];
+        for (const item of items) {
+          for (const type of item.types) {
+            const blob = await item.getType(type);
+            const ext = type.split("/")[1] || "bin";
+            files.push(new File([blob], `剪贴板-${Date.now()}.${ext}`, { type }));
+          }
+        }
+        await addFiles(files);
+      } catch {
+        alert("浏览器没有授权读取剪贴板。你也可以直接 Ctrl+V 粘贴。");
+      }
+    }
+    async function renderAttachmentList() {
+      const list = $("attachmentList");
+      if (!currentAttachments.length) {
+        list.innerHTML = "";
+        return;
+      }
+      list.innerHTML = currentAttachments.map(meta => `
+        <div class="attachment-card" data-attachment="${escapeHtml(meta.id)}">
+          <button type="button" class="attachment-remove" data-remove-attachment="${escapeHtml(meta.id)}">×</button>
+          <div class="attachment-preview">加载中...</div>
+          <div class="attachment-name">${escapeHtml(meta.name || "附件")}</div>
+          <div class="attachment-meta">${escapeHtml(meta.kind || "file")} · ${formatBytes(meta.size)}</div>
+        </div>
+      `).join("");
+      for (const meta of currentAttachments) {
+        const card = document.querySelector(`[data-attachment="${CSS.escape(meta.id)}"]`);
+        if (!card) continue;
+        const preview = card.querySelector(".attachment-preview");
+        const media = await getMedia(meta.id);
+        if (!media) {
+          preview.textContent = "附件缺失";
+          continue;
+        }
+        if (meta.kind === "image") {
+          preview.innerHTML = `<img src="${media.data}" alt="${escapeHtml(meta.name || "图片附件")}" />`;
+        } else if (meta.kind === "audio") {
+          preview.innerHTML = `<audio controls src="${media.data}"></audio>`;
+        } else if (meta.kind === "video") {
+          preview.innerHTML = `<video controls src="${media.data}" style="width:100%; max-height:120px; border-radius:6px"></video>`;
+        } else {
+          preview.innerHTML = `<a class="attachment-download" href="${media.data}" download="${escapeHtml(meta.name || "附件")}">打开 / 下载附件</a>`;
+        }
+      }
+    }
+    async function hydrateEntryAttachments() {
+      const boxes = [...document.querySelectorAll("[data-entry-attachments]")];
+      for (const box of boxes) {
+        let attachments = [];
+        try {
+          attachments = JSON.parse(box.dataset.entryAttachments || "[]");
+        } catch {
+          attachments = [];
+        }
+        if (!attachments.length) {
+          box.innerHTML = "";
+          continue;
+        }
+        box.innerHTML = attachments.map(meta => `
+          <div class="attachment-card" data-view-attachment="${escapeHtml(meta.id)}">
+            <div class="attachment-preview">加载中...</div>
+            <div class="attachment-name">${escapeHtml(meta.name || "附件")}</div>
+            <div class="attachment-meta">${escapeHtml(meta.kind || "file")} · ${formatBytes(meta.size)}</div>
+          </div>
+        `).join("");
+        for (const meta of attachments) {
+          const card = box.querySelector(`[data-view-attachment="${CSS.escape(meta.id)}"]`);
+          if (!card) continue;
+          const preview = card.querySelector(".attachment-preview");
+          const media = await getMedia(meta.id);
+          if (!media) {
+            preview.textContent = "附件缺失";
+          } else if (meta.kind === "image") {
+            preview.innerHTML = `<img src="${media.data}" alt="${escapeHtml(meta.name || "图片附件")}" />`;
+          } else if (meta.kind === "audio") {
+            preview.innerHTML = `<audio controls src="${media.data}"></audio>`;
+          } else if (meta.kind === "video") {
+            preview.innerHTML = `<video controls src="${media.data}" style="width:100%; max-height:120px; border-radius:6px"></video>`;
+          } else {
+            preview.innerHTML = `<a class="attachment-download" href="${media.data}" download="${escapeHtml(meta.name || "附件")}">打开 / 下载附件</a>`;
+          }
+        }
+      }
+    }
+    function removeAttachment(id) {
+      currentAttachments = currentAttachments.filter(item => item.id !== id);
+      if (editingId) pendingDeletedAttachmentIds.push(id);
+      else deleteMedia(id);
+      renderAttachmentList();
+      saveDraft();
+    }
+    async function openAttachmentViewer(id) {
+      const media = await getMedia(id);
+      if (!media) {
+        alert("附件内容没有找到，可能已经被清理或没有导入完整备份。");
+        return;
+      }
+      $("viewerTitle").textContent = media.name || "附件";
+      $("viewerMeta").textContent = `${media.kind || mediaKind(media.type)} · ${formatBytes(media.size)} · ${media.type || "未知类型"}`;
+      $("viewerDownload").href = media.data;
+      $("viewerDownload").download = media.name || "附件";
+
+      const kind = media.kind || mediaKind(media.type);
+      if (kind === "image") {
+        $("viewerBody").innerHTML = `<img src="${media.data}" alt="${escapeHtml(media.name || "图片附件")}" />`;
+      } else if (kind === "audio") {
+        $("viewerBody").innerHTML = `<audio controls autoplay src="${media.data}"></audio>`;
+      } else if (kind === "video") {
+        $("viewerBody").innerHTML = `<video controls autoplay src="${media.data}"></video>`;
+      } else {
+        $("viewerBody").innerHTML = `
+          <div class="viewer-file">
+            <h2>${escapeHtml(media.name || "附件")}</h2>
+            <p class="sub">${escapeHtml(media.type || "未知类型")} · ${formatBytes(media.size)}</p>
+            <a class="attachment-download" href="${media.data}" download="${escapeHtml(media.name || "附件")}">打开 / 下载附件</a>
+          </div>
+        `;
+      }
+      $("attachmentViewer").classList.add("active");
+    }
+    function closeAttachmentViewer() {
+      $("attachmentViewer").classList.remove("active");
+      $("viewerBody").innerHTML = "";
+      $("viewerDownload").removeAttribute("href");
+    }
+
+    function updateStarButton() {
+      $("toggleStar").textContent = starredDraft ? "取消重要" : "标为重要";
+      $("toggleStar").classList.toggle("starred", starredDraft);
+    }
+
+    function applyTemplate() {
+      const t = templates[$("templateSelect").value];
+      if (!t) return;
+      $("content").placeholder = t.content;
+      $("gratitude").placeholder = t.gratitude;
+      $("win").placeholder = t.win;
+      $("tomorrow").placeholder = t.tomorrow;
+      if (!$("title").value.trim()) $("title").value = t.title;
+      if (!$("content").value.trim()) $("content").value = t.content;
+      if (!$("gratitude").value.trim()) $("gratitude").value = t.gratitude;
+      if (!$("win").value.trim()) $("win").value = t.win;
+      if (!$("tomorrow").value.trim()) $("tomorrow").value = t.tomorrow;
+      saveDraft();
+    }
+
+    function saveDraft() {
+      if (editingId) return;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...formData(), starred: starredDraft }));
+    }
+
+    function loadDraft() {
+      if (state.entries.some(e => e.date === todayString())) return;
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft || !Object.values(draft).some(Boolean)) return;
+        if (!confirm("检测到未保存草稿，要恢复吗？")) return;
+        fillForm(draft);
+        starredDraft = Boolean(draft.starred);
+        updateStarButton();
+      } catch {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    }
+
+    function renderAll() {
+      renderSummary();
+      renderCalendar();
+      renderBadges();
+      renderEntries();
+      renderInsights();
+      drawTrend();
+      drawWeekTrack();
+      $("exportText").value = makeMarkdown();
+    }
+    function renderSummary() {
+      const month = monthEntries();
+      const now = new Date();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      const monthDays = new Set(month.map(e => e.date)).size;
+      const percent = Math.round(monthDays / daysInMonth * 100);
+      $("monthRing").style.setProperty("--p", percent);
+      $("monthRing").setAttribute("data-text", percent + "%");
+      $("monthCount").textContent = `${monthDays} 天`;
+      $("streak").textContent = `${currentStreak()} 天`;
+      $("totalCount").textContent = `${state.entries.length} 篇`;
+      const score = avg(state.entries.map(e => Number(e.mood)));
+      $("avgMood").textContent = score ? `${score.toFixed(1)} / 5` : "暂无";
+    }
+    function renderCalendar() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const days = new Date(year, month + 1, 0).getDate();
+      const start = new Date(year, month, 1).getDay();
+      const dates = new Set(state.entries.map(e => e.date));
+      let html = "";
+      for (let i = 0; i < start; i++) html += `<div></div>`;
+      for (let d = 1; d <= days; d++) {
+        const ds = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const cls = ["day"];
+        if (dates.has(ds)) cls.push("done");
+        if (ds === todayString()) cls.push("today");
+        html += `<div class="${cls.join(" ")}">${d}</div>`;
+      }
+      $("calendar").innerHTML = html;
+      const tips = [];
+      if (!state.entries.length) tips.push("第一篇不用写长，先写真实。");
+      else if (!dates.has(todayString())) tips.push("今天还没记录。可以只写三句话：发生了什么、感受是什么、明天照顾什么。");
+      else tips.push("今天已经留下痕迹了。睡前可以补一句明天的重点。");
+      $("quickTips").innerHTML = tips.map(t => `<div class="tip">${escapeHtml(t)}</div>`).join("");
+    }
+    function getBadges() {
+      const dates = uniqueDates();
+      const streak = currentStreak();
+      const important = state.entries.filter(e => e.starred).length;
+      const lowRecovery = state.entries.some(e => Number(e.mood) <= 2 && (e.control || e.tomorrow));
+      const habits = state.entries.reduce((sum, e) => sum + (e.habits || []).length, 0);
+      return [
+        { name: "第一篇", desc: "开始记录自己", done: state.entries.length >= 1 },
+        { name: "三日不断", desc: "连续记录 3 天", done: streak >= 3 },
+        { name: "七日轨迹", desc: "累计记录 7 天", done: dates.length >= 7 },
+        { name: "照顾低谷", desc: "低落时写下可控一步", done: lowRecovery },
+        { name: "重要收藏", desc: "收藏 3 篇重要日记", done: important >= 3 },
+        { name: "生活回路", desc: "记录 10 次习惯", done: habits >= 10 }
+      ];
+    }
+    function renderBadges() {
+      $("badgeWall").innerHTML = getBadges().map(b => `
+        <div class="badge ${b.done ? "unlocked" : ""}">
+          <div class="badge-mark">${b.done ? "✓" : "·"}</div>
+          <div>
+            <strong>${escapeHtml(b.name)}</strong>
+            <div style="font-size:12px; color:var(--muted); margin-top:2px">${escapeHtml(b.desc)}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+    function renderEntries() {
+      const q = $("search").value.trim().toLowerCase();
+      const mood = $("filterMood").value;
+      const star = $("filterStar").value;
+      let list = [...state.entries].sort((a,b) => b.date.localeCompare(a.date));
+      if (q) {
+        list = list.filter(e => [e.title, e.tags, e.content, e.gratitude, e.win, e.tomorrow, e.control, ...(e.habits || [])].join(" ").toLowerCase().includes(q));
+      }
+      if (mood) list = list.filter(e => String(e.mood) === mood);
+      if (star === "star") list = list.filter(e => e.starred);
+      if (!list.length) {
+        $("entries").innerHTML = `<div class="empty">还没有符合条件的日记。</div>`;
+        return;
+      }
+      $("entries").innerHTML = list.map(e => `
+        <article class="entry">
+          <div class="entry-head">
+            <div>
+              <div class="entry-title">${escapeHtml(e.title || "无标题日记")}</div>
+              <div class="tag-row">
+                ${e.starred ? `<span class="tag gold">重要</span>` : ""}
+                <span class="tag blue">${escapeHtml(e.date)}</span>
+                <span class="tag ${Number(e.mood) >= 4 ? "green" : Number(e.mood) <= 2 ? "red" : "gold"}">心情：${moodText[e.mood]}</span>
+                <span class="tag">精力：${escapeHtml(e.energy)}</span>
+                ${(e.habits || []).map(t => `<span class="tag green">${escapeHtml(t)}</span>`).join("")}
+                ${e.tags ? e.tags.split(/[、,， ]+/).filter(Boolean).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("") : ""}
+              </div>
+            </div>
+            <div class="actions" style="margin-top:0">
+              <button data-edit="${e.id}" class="ghost">编辑</button>
+              <button data-delete="${e.id}" class="ghost danger">删除</button>
+            </div>
+          </div>
+          <p><strong>今天发生了什么：</strong>\n${escapeHtml(e.content || "未填写")}</p>
+          <p><strong>可控的一小步：</strong>\n${escapeHtml(e.control || "未填写")}</p>
+          <p><strong>感谢：</strong>\n${escapeHtml(e.gratitude || "未填写")}</p>
+          <p><strong>做得好的地方：</strong>\n${escapeHtml(e.win || "未填写")}</p>
+          <p><strong>明天照顾：</strong>\n${escapeHtml(e.tomorrow || "未填写")}</p>
+          ${(e.attachments || []).length ? `<p><strong>附件：</strong></p><div class="attachment-list" data-entry-attachments='${escapeHtml(JSON.stringify(e.attachments || []))}'></div>` : ""}
+        </article>
+      `).join("");
+      hydrateEntryAttachments();
+    }
+    function renderInsights() {
+      const total = state.entries.length;
+      const month = monthEntries().length;
+      const moodAvg = avg(state.entries.map(e => Number(e.mood)));
+      const energyAvg = avg(state.entries.map(e => Number(e.energy)));
+      const tags = {};
+      state.entries.forEach(e => String(e.tags || "").split(/[、,， ]+/).filter(Boolean).forEach(t => tags[t] = (tags[t] || 0) + 1));
+      const habitCounts = {};
+      state.entries.forEach(e => (e.habits || []).forEach(t => habitCounts[t] = (habitCounts[t] || 0) + 1));
+      const tagText = Object.entries(tags).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>`${k} ${v} 次`).join("；") || "暂无";
+      const habitText = Object.entries(habitCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`${k} ${v} 次`).join("；") || "暂无";
+      $("stats").innerHTML = `
+        <div class="metric"><span>总记录</span><strong>${total} 篇</strong></div>
+        <div class="metric"><span>本月记录</span><strong>${month} 篇</strong></div>
+        <div class="metric"><span>平均心情</span><strong>${moodAvg ? moodAvg.toFixed(1) : "暂无"}</strong></div>
+        <div class="metric"><span>平均精力</span><strong>${energyAvg ? energyAvg.toFixed(1) : "暂无"}</strong></div>
+        <div class="metric"><span>高频标签</span><strong>${escapeHtml(tagText)}</strong></div>
+        <div class="metric"><span>高频习惯</span><strong>${escapeHtml(habitText)}</strong></div>
+      `;
+      $("coachTips").innerHTML = buildTips().map(t => `<div class="tip">${escapeHtml(t)}</div>`).join("");
+      $("monthSummary").innerHTML = buildMonthSummary().map(t => `<div class="tip">${escapeHtml(t)}</div>`).join("");
+    }
+    function buildTips() {
+      if (!state.entries.length) return ["先写第一篇。日记不是作文，是给自己留一个锚点。"];
+      const tips = [];
+      const recent = [...state.entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7);
+      const lowMood = recent.filter(e => Number(e.mood) <= 2).length;
+      const lowEnergy = recent.filter(e => Number(e.energy) <= 2).length;
+      const text = recent.map(e => `${e.content} ${e.tags} ${e.tomorrow} ${e.control} ${(e.habits || []).join(" ")}`).join(" ");
+      if (lowMood >= 2) tips.push("最近低心情出现了几次。建议下一篇多写“我真正需要什么”，不要只记录事件。");
+      if (lowEnergy >= 2) tips.push("精力偏低时，明天目标要小一点。能恢复，比硬撑更重要。");
+      if (/焦虑|压力|烦|累|崩|难受/.test(text)) tips.push("最近文字里有压力信号。可以加一栏“可控的一小步”，把注意力拉回行动。");
+      if (/失眠|睡不着|熬夜|困/.test(text)) tips.push("最近有睡眠信号。可以把睡前日记写短一点，目标是收束思绪，不是复盘到更清醒。");
+      if (/拖延|不想动|逃避/.test(text)) tips.push("出现拖延时，明天只写一个 10 分钟能开始的动作，不要把任务写成一座山。");
+      if (/学习|题|代码|工作/.test(text)) tips.push("如果最近在高强度学习，日记里保留“今天做得好的地方”，能减少只盯缺口的疲惫感。");
+      if (!tips.length) tips.push("整体状态还算平稳。继续记录事实、感受和明天的一件小事。");
+      return tips;
+    }
+
+    function buildMonthSummary() {
+      const month = monthEntries();
+      if (!month.length) return ["本月还没有记录。写下第一篇后，这里会自动生成总结。"];
+      const moodAvg = avg(month.map(e => Number(e.mood)));
+      const energyAvg = avg(month.map(e => Number(e.energy)));
+      const tags = {};
+      month.forEach(e => String(e.tags || "").split(/[、,， ]+/).filter(Boolean).forEach(t => tags[t] = (tags[t] || 0) + 1));
+      const topTag = Object.entries(tags).sort((a,b)=>b[1]-a[1])[0];
+      const lowDays = month.filter(e => Number(e.mood) <= 2).length;
+      const goodDays = month.filter(e => Number(e.mood) >= 4).length;
+      const lines = [
+        `本月已记录 ${new Set(month.map(e => e.date)).size} 天，平均心情 ${moodAvg.toFixed(1)}，平均精力 ${energyAvg.toFixed(1)}。`
+      ];
+      if (topTag) lines.push(`本月最常出现的主题是“${topTag[0]}”，出现 ${topTag[1]} 次。`);
+      if (goodDays >= lowDays) lines.push("这个月的亮点不少，建议收藏几篇状态好的日记，低谷时回看。");
+      else lines.push("这个月低心情偏多，下个月目标可以先定成“降低损耗”，不是强行提速。");
+      return lines;
+    }
+
+    function drawTrend() {
+      const canvas = $("trendChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, devicePixelRatio || 1));
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(0,0,0,.16)";
+      ctx.fillRect(0, 0, w, h);
+      const pad = 32;
+      const days = [];
+      const end = new Date(todayString() + "T00:00:00");
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(end.getTime() - i * DAY_MS);
+        const ds = formatDate(d);
+        const dayEntries = state.entries.filter(e => e.date === ds);
+        days.push({
+          date: ds,
+          mood: avg(dayEntries.map(e => Number(e.mood))),
+          energy: avg(dayEntries.map(e => Number(e.energy)))
+        });
+      }
+      for (let i = 1; i <= 5; i++) {
+        const y = h - pad - (i - 1) / 4 * (h - pad * 2);
+        ctx.strokeStyle = "rgba(245,245,245,.08)";
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(w - pad, y);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(245,245,245,.42)";
+        ctx.fillText(String(i), 10, y + 4);
+      }
+      function plot(key, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        let started = false;
+        days.forEach((d, i) => {
+          if (!d[key]) return;
+          const x = pad + i / 29 * (w - pad * 2);
+          const y = h - pad - (d[key] - 1) / 4 * (h - pad * 2);
+          if (!started) {
+            ctx.moveTo(x, y);
+            started = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      plot("mood", "rgba(34,229,138,.9)");
+      plot("energy", "rgba(0,162,255,.9)");
+      ctx.fillStyle = "rgba(34,229,138,.9)";
+      ctx.fillText("心情", pad, 18);
+      ctx.fillStyle = "rgba(0,162,255,.9)";
+      ctx.fillText("精力", pad + 48, 18);
+    }
+    function drawWeekTrack() {
+      const canvas = $("weekTrack");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, devicePixelRatio || 1));
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const w = rect.width;
+      const h = rect.height;
+      const pad = 28;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(0,0,0,.14)";
+      ctx.fillRect(0, 0, w, h);
+      const end = new Date(todayString() + "T00:00:00");
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(end.getTime() - i * DAY_MS);
+        const ds = formatDate(d);
+        const entries = state.entries.filter(e => e.date === ds);
+        days.push({ date: ds, count: entries.length, mood: avg(entries.map(e => Number(e.mood))) });
+      }
+      ctx.strokeStyle = "rgba(245,245,245,.12)";
+      ctx.beginPath();
+      ctx.moveTo(pad, h / 2);
+      ctx.lineTo(w - pad, h / 2);
+      ctx.stroke();
+      days.forEach((d, i) => {
+        const x = pad + i / 6 * (w - pad * 2);
+        const radius = d.count ? 12 + Math.min(8, d.count * 2) : 8;
+        const mood = d.mood || 0;
+        const color = d.count
+          ? mood >= 4 ? "rgba(34,229,138,.92)" : mood <= 2 ? "rgba(255,107,107,.9)" : "rgba(255,208,63,.92)"
+          : "rgba(245,245,245,.2)";
+        ctx.shadowBlur = d.count ? 18 : 0;
+        ctx.shadowColor = color;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, h / 2, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = d.count ? "#1a1a1a" : "rgba(245,245,245,.56)";
+        ctx.font = "700 12px Microsoft YaHei, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(new Date(d.date + "T00:00:00").getDate()), x, h / 2);
+        ctx.fillStyle = "rgba(245,245,245,.5)";
+        ctx.font = "11px Microsoft YaHei, sans-serif";
+        ctx.fillText(d.count ? `${d.count} 篇` : "未记", x, h - 22);
+      });
+    }
+
+    function fillForm(e) {
+      $("date").value = e.date;
+      $("title").value = e.title || "";
+      $("mood").value = e.mood;
+      $("energy").value = e.energy;
+      $("sleep").value = e.sleep || "";
+      $("tags").value = e.tags || "";
+      setHabits(e.habits || []);
+      $("content").value = e.content || "";
+      $("control").value = e.control || "";
+      currentAttachments = [...(e.attachments || [])];
+      pendingDeletedAttachmentIds = [];
+      renderAttachmentList();
+      $("gratitude").value = e.gratitude || "";
+      $("win").value = e.win || "";
+      $("tomorrow").value = e.tomorrow || "";
+      starredDraft = Boolean(e.starred);
+      updateStarButton();
+    }
+    function resetForm() {
+      editingId = null;
+      $("formTitle").textContent = "今天的日记";
+      $("saveButton").textContent = "保存日记";
+      $("cancelEdit").hidden = true;
+      $("date").value = todayString();
+      $("title").value = "";
+      $("mood").value = "3";
+      $("energy").value = "3";
+      $("sleep").value = "";
+      $("tags").value = "";
+      setHabits([]);
+      $("content").value = "";
+      $("control").value = "";
+      currentAttachments = [];
+      pendingDeletedAttachmentIds = [];
+      renderAttachmentList();
+      $("gratitude").value = "";
+      $("win").value = "";
+      $("tomorrow").value = "";
+      starredDraft = false;
+      updateStarButton();
+    }
+    function formData() {
+      return {
+        date: $("date").value,
+        title: $("title").value.trim(),
+        mood: $("mood").value,
+        energy: $("energy").value,
+        sleep: $("sleep").value.trim(),
+        tags: $("tags").value.trim(),
+        habits: selectedHabits(),
+        content: $("content").value.trim(),
+        control: $("control").value.trim(),
+        attachments: currentAttachments,
+        gratitude: $("gratitude").value.trim(),
+        win: $("win").value.trim(),
+        tomorrow: $("tomorrow").value.trim(),
+        starred: starredDraft
+      };
+    }
+    function makeMarkdown() {
+      const lines = ["# 私人日记", ""];
+      [...state.entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e => {
+        lines.push(`## ${e.date}｜${e.title || "无标题日记"}`, "");
+        lines.push(`- 心情：${moodText[e.mood]}`);
+        lines.push(`- 精力：${e.energy} / 5`);
+        lines.push(`- 睡眠：${e.sleep || "未填写"}`);
+        lines.push(`- 标签：${e.tags || "未填写"}`, "");
+        lines.push(`- 习惯：${(e.habits || []).join("、") || "未填写"}`);
+        lines.push(`- 附件：${(e.attachments || []).map(a => a.name).join("、") || "无"}`);
+        lines.push(`- 重要：${e.starred ? "是" : "否"}`, "");
+        lines.push("今天发生了什么：", "", e.content || "未填写", "");
+        lines.push("可控的一小步：", "", e.control || "未填写", "");
+        lines.push("今天感谢：", "", e.gratitude || "未填写", "");
+        lines.push("今天做得好的地方：", "", e.win || "未填写", "");
+        lines.push("明天想照顾的一件事：", "", e.tomorrow || "未填写", "");
+      });
+      return lines.join("\n");
+    }
+    function makeMarkdownFor(entries, title) {
+      const backup = state.entries;
+      state.entries = entries;
+      const text = makeMarkdown().replace("# 私人日记", `# ${title}`);
+      state.entries = backup;
+      return text;
+    }
+    function download(name, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toast(message) {
+      $("saveToast").textContent = message;
+      $("saveToast").classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => $("saveToast").classList.remove("show"), 2200);
+    }
+
+    function launchCelebration() {
+      const canvas = $("celebrationLayer");
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.max(1, Math.min(2, devicePixelRatio || 1));
+      const w = innerWidth;
+      const h = innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const colors = ["#22e58a", "#00a2ff", "#ffd03f", "#f5f5f5"];
+      const particles = Array.from({ length: 90 }, (_, i) => {
+        const angle = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.15;
+        const speed = 4 + Math.random() * 6;
+        return {
+          x: w / 2,
+          y: h * .32,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          g: .16 + Math.random() * .08,
+          size: 4 + Math.random() * 5,
+          life: 70 + Math.random() * 30,
+          color: colors[i % colors.length],
+          rot: Math.random() * Math.PI
+        };
+      });
+      let frame = 0;
+      function step() {
+        frame++;
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.g;
+          p.rot += .12;
+          const alpha = Math.max(0, 1 - frame / p.life);
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        });
+        if (frame < 95) requestAnimationFrame(step);
+        else ctx.clearRect(0, 0, w, h);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function motivationalMessage() {
+      const streak = currentStreak();
+      const total = state.entries.length;
+      if (streak >= 7) return `连续 ${streak} 天了，你已经在建立一条很稳的自我观察线。`;
+      if (streak >= 3) return `连续 ${streak} 天，节奏开始长出来了。`;
+      if (total === 1) return "第一篇已经留下，开始比完美更重要。";
+      return "今天被认真记录了，给自己留了一盏灯。";
+    }
+
+    function initBg() {
+      const canvas = $("bg");
+      const ctx = canvas.getContext("2d");
+      let w = 0, h = 0, dpr = 1;
+      const dots = Array.from({ length: 80 }, (_, i) => ({ x: (i * 97) % 100 / 100, y: (i * 53) % 100 / 100, s: .06 + (i % 6) * .018 }));
+      function resize() {
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        w = innerWidth; h = innerHeight;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+      }
+      function line(x1,y1,x2,y2,c,s=1) {
+        ctx.strokeStyle = c; ctx.lineWidth = s; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      }
+      function draw(t) {
+        ctx.clearRect(0,0,w,h);
+        const g = ctx.createLinearGradient(0,0,w,h);
+        g.addColorStop(0,"#1a1a1a");
+        g.addColorStop(.5,"#121b1f");
+        g.addColorStop(1,"#111111");
+        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+        const step = w < 700 ? 42 : 58;
+        const off = (t * .018) % step;
+        for (let x=-step+off; x<w+step; x+=step) line(x,0,x+h*.22,h,"rgba(0,162,255,.08)");
+        for (let y=-step+off; y<h+step; y+=step) line(0,y,w,y+w*.045,"rgba(245,245,245,.055)");
+        dots.forEach((p,i) => {
+          const x = (p.x*w + t*p.s) % (w+20) - 10;
+          const y = p.y*h + Math.sin(t*.001+i)*18;
+          ctx.fillStyle = i%3===0 ? "rgba(34,229,138,.18)" : i%3===1 ? "rgba(0,162,255,.16)" : "rgba(255,208,63,.14)";
+          ctx.fillRect(x,y,3+(i%4),3+(i%4));
+        });
+        for (let i=0;i<8;i++) {
+          const x = (t*(.04+i*.004)+i*210)%(w+260)-130;
+          const y = h*(.15+((i*.137)% .7));
+          const c = i%2 ? "rgba(34,229,138,.55)" : "rgba(0,162,255,.55)";
+          ctx.shadowBlur = 12; ctx.shadowColor = c;
+          line(x,y,x+110,y,c,.9); line(x+110,y,x+110,y+45,c,.9); line(x+110,y+45,x+205,y+45,c,.9);
+          ctx.shadowBlur = 0;
+        }
+        const scan = (t*.11)%(h+160)-80;
+        const sg = ctx.createLinearGradient(0,scan-50,0,scan+50);
+        sg.addColorStop(0,"rgba(0,162,255,0)");
+        sg.addColorStop(.5,"rgba(34,229,138,.11)");
+        sg.addColorStop(1,"rgba(0,162,255,0)");
+        ctx.fillStyle = sg; ctx.fillRect(0, scan-50, w, 100);
+        ctx.fillStyle = "rgba(0,0,0,.14)";
+        ctx.fillRect(0,0,w,h);
+        requestAnimationFrame(draw);
+      }
+      resize();
+      addEventListener("resize", resize);
+      requestAnimationFrame(draw);
+    }
+
+    document.querySelectorAll(".tabs button").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+    $("fillPrompt").addEventListener("click", randomPrompt);
+    $("changeQuote").addEventListener("click", () => {
+      const key = `quote-offset-${todayString()}`;
+      const next = Number(localStorage.getItem(key) || 0) + 1;
+      localStorage.setItem(key, String(next));
+      renderDailyQuote(next);
+    });
+    $("applyTemplate").addEventListener("click", applyTemplate);
+    $("toggleStar").addEventListener("click", () => {
+      starredDraft = !starredDraft;
+      updateStarButton();
+      saveDraft();
+    });
+    $("clearForm").addEventListener("click", () => {
+      resetForm();
+      localStorage.removeItem(DRAFT_KEY);
+    });
+    $("cancelEdit").addEventListener("click", resetForm);
+    $("search").addEventListener("input", renderEntries);
+    $("filterMood").addEventListener("change", renderEntries);
+    $("filterStar").addEventListener("change", renderEntries);
+    $("pickFiles").addEventListener("click", () => $("filePicker").click());
+    $("filePicker").addEventListener("change", async (event) => {
+      await addFiles(event.target.files);
+      event.target.value = "";
+    });
+    $("pasteClipboard").addEventListener("click", pasteClipboardFiles);
+    $("attachmentList").addEventListener("click", event => {
+      const id = event.target.dataset.removeAttachment;
+      if (id) {
+        removeAttachment(id);
+        return;
+      }
+      if (event.target.closest("audio, video, a")) return;
+      const card = event.target.closest("[data-attachment]");
+      if (card) openAttachmentViewer(card.dataset.attachment);
+    });
+    $("attachmentZone").addEventListener("dragover", event => {
+      event.preventDefault();
+      $("attachmentZone").classList.add("dragging");
+    });
+    $("attachmentZone").addEventListener("dragleave", () => $("attachmentZone").classList.remove("dragging"));
+    $("attachmentZone").addEventListener("drop", async event => {
+      event.preventDefault();
+      $("attachmentZone").classList.remove("dragging");
+      await addFiles(event.dataTransfer.files);
+    });
+    document.addEventListener("paste", async event => {
+      if (!$("write").classList.contains("active")) return;
+      const files = [...(event.clipboardData?.files || [])];
+      if (files.length) await addFiles(files);
+    });
+    $("randomEntry").addEventListener("click", () => {
+      if (!state.entries.length) {
+        alert("还没有日记可以回看。");
+        return;
+      }
+      const entry = state.entries[Math.floor(Math.random() * state.entries.length)];
+      $("search").value = entry.title || entry.date;
+      $("filterMood").value = "";
+      $("filterStar").value = "";
+      renderEntries();
+      switchTab("history");
+    });
+    document.querySelectorAll("#diaryForm input, #diaryForm textarea, #diaryForm select").forEach(el => {
+      el.addEventListener("input", saveDraft);
+      el.addEventListener("change", saveDraft);
+    });
+    $("diaryForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData();
+      if (editingId) {
+        const idx = state.entries.findIndex(e => e.id === editingId);
+        if (idx >= 0) state.entries[idx] = { ...state.entries[idx], ...data, updatedAt: new Date().toISOString() };
+        pendingDeletedAttachmentIds.forEach(id => deleteMedia(id));
+      } else {
+        state.entries.push({ id: window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), ...data, createdAt: new Date().toISOString() });
+      }
+      save();
+      localStorage.removeItem(DRAFT_KEY);
+      resetForm();
+      launchCelebration();
+      toast(motivationalMessage());
+    });
+    $("entries").addEventListener("click", (event) => {
+      if (event.target.closest("audio, video, a")) return;
+      const viewAttachment = event.target.closest("[data-view-attachment]");
+      if (viewAttachment) {
+        openAttachmentViewer(viewAttachment.dataset.viewAttachment);
+        return;
+      }
+      const editId = event.target.dataset.edit;
+      if (editId) {
+        const entry = state.entries.find(e => e.id === editId);
+        if (!entry) return;
+        editingId = editId;
+        fillForm(entry);
+        $("formTitle").textContent = "编辑日记";
+        $("saveButton").textContent = "保存修改";
+        $("cancelEdit").hidden = false;
+        switchTab("write");
+        return;
+      }
+      const deleteId = event.target.dataset.delete;
+      if (!deleteId) return;
+      if (!confirm("确定删除这篇日记吗？")) return;
+      const idx = state.entries.findIndex(e => e.id === deleteId);
+      if (idx >= 0) {
+        (state.entries[idx].attachments || []).forEach(att => deleteMedia(att.id));
+        state.entries.splice(idx, 1);
+        save();
+      }
+    });
+    $("closeViewer").addEventListener("click", closeAttachmentViewer);
+    $("attachmentViewer").addEventListener("click", event => {
+      if (event.target.id === "attachmentViewer") closeAttachmentViewer();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && $("attachmentViewer").classList.contains("active")) closeAttachmentViewer();
+    });
+    $("copyMarkdown").addEventListener("click", async () => {
+      const text = makeMarkdown();
+      $("exportText").value = text;
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("已复制 Markdown。");
+      } catch {
+        $("exportText").focus();
+        $("exportText").select();
+        alert("浏览器限制了自动复制，已帮你选中文本。");
+      }
+    });
+    $("downloadMarkdown").addEventListener("click", () => download("私人日记.md", makeMarkdown(), "text/markdown;charset=utf-8"));
+    $("downloadMonthMarkdown").addEventListener("click", () => {
+      const prefix = todayString().slice(0, 7);
+      const entries = state.entries.filter(e => e.date.startsWith(prefix));
+      download(`私人日记-${prefix}.md`, makeMarkdownFor(entries, `私人日记 ${prefix}`), "text/markdown;charset=utf-8");
+    });
+    $("downloadTagMarkdown").addEventListener("click", () => {
+      const tag = prompt("输入要导出的标签，例如：学习");
+      if (!tag) return;
+      const entries = state.entries.filter(e => String(e.tags || "").split(/[、,， ]+/).includes(tag));
+      if (!entries.length) {
+        alert("没有找到这个标签的日记。");
+        return;
+      }
+      download(`私人日记-${tag}.md`, makeMarkdownFor(entries, `私人日记 标签：${tag}`), "text/markdown;charset=utf-8");
+    });
+    $("downloadJson").addEventListener("click", async () => {
+      const backup = {
+        ...state,
+        media: await allMedia(),
+        exportedAt: new Date().toISOString()
+      };
+      download("私人日记备份.json", JSON.stringify(backup, null, 2), "application/json;charset=utf-8");
+    });
+    $("importJson").addEventListener("click", () => $("fileInput").click());
+    $("fileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      let data;
+      try { data = JSON.parse(await file.text()); }
+      catch { alert("备份文件不是有效 JSON。"); return; }
+      if (!Array.isArray(data.entries)) { alert("备份文件格式不对。"); return; }
+      state.entries = data.entries.map(e => ({
+        habits: [],
+        control: "",
+        starred: false,
+        attachments: [],
+        ...e
+      }));
+      if (Array.isArray(data.media)) {
+        for (const media of data.media) await putMedia(media);
+      }
+      save();
+      alert("导入完成。");
+    });
+    $("wipeData").addEventListener("click", async () => {
+      if (!confirm("这会清空浏览器里的本地日记。建议先导出 JSON 备份。确定继续吗？")) return;
+      state.entries = [];
+      currentAttachments = [];
+      await clearMedia();
+      save();
+    });
+    $("setLock").addEventListener("click", setupLock);
+    $("lockNow").addEventListener("click", () => {
+      if (!localStorage.getItem(LOCK_KEY)) setupLock();
+      if (localStorage.getItem(LOCK_KEY)) showLock("已锁定。");
+    });
+    $("disableLock").addEventListener("click", disableLock);
+    $("unlockButton").addEventListener("click", unlockDiary);
+    $("unlockPassword").addEventListener("keydown", event => {
+      if (event.key === "Enter") unlockDiary();
+    });
+
+    $("date").value = todayString();
+    randomPrompt();
+    renderDailyQuote(Number(localStorage.getItem(`quote-offset-${todayString()}`) || 0));
+    updateStarButton();
+    renderAll();
+    if (localStorage.getItem(LOCK_KEY)) showLock();
+    else loadDraft();
+    initBg();
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

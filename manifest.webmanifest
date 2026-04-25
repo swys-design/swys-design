@@ -1,0 +1,18 @@
+{
+  "name": "私人日记记录",
+  "short_name": "私人日记",
+  "description": "本地优先的私人日记、情绪记录和附件记录工具。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
